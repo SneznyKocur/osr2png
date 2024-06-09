@@ -61,14 +61,16 @@ class TextComponent:
 
         # Make sure text fits the screen
         while (
-            font.getsize(text)[0] > text_canvas_size[0]
+            font.getbbox(text)[2] > text_canvas_size[0]
             and font_size > 15 * self.settings.scale
         ):
             font_size -= 1
             font = self.make_font(font_size)
 
         # Font size
-        text_width, text_height = self.draw.textsize(text, font=font)
+        _, _, text_width, text_height = self.draw.textbbox(
+            xy=(0, 0), text=text, font=font
+        )
 
         # Text alignment
         if alignment == TextAlignment.left:

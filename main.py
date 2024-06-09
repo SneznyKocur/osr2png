@@ -15,7 +15,7 @@ from app.generation.common import CanvasStyle, vector
 from app.version import Version
 
 #
-CURRENT_VERSION = Version.from_str("0.7.8")
+CURRENT_VERSION = Version.from_str("0.7.9")
 
 
 def main(argv: list[str]) -> int:
