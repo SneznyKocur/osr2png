@@ -9,14 +9,13 @@ as I am very lazy and only update this thing few times a year, lots of stuff gon
 ## Styles
 
 ## Style 1
-
-![](https://cdn.discordapp.com/attachments/703552229680087042/1051775122790416404/umTspt7.png)
-![](https://cdn.discordapp.com/attachments/703552229680087042/1051775374725500968/UfHxc0O.png)
+![image](https://github.com/xjunko/osr2png/assets/44401509/98f06ad3-edf7-4998-a853-c4ed24941af3)
+![image](https://github.com/xjunko/osr2png/assets/44401509/463729ef-d474-445a-93b1-d08824727f59)
 
 ## Style 2
+![image](https://github.com/xjunko/osr2png/assets/44401509/d6066692-1c27-4356-b7f9-58b19b4b5e20)
+![image](https://github.com/xjunko/osr2png/assets/44401509/8b548487-4ccd-4ba4-b7b4-10e700189878)
 
-![](https://cdn.discordapp.com/attachments/703552229680087042/1066939430977409024/FireRedz_-_Naoki_Miki_CV_-_Unhappy_End_World_shigurins_Hard.png)
-![](https://cdn.discordapp.com/attachments/703552229680087042/1066940160765333524/Honoka-Chan_-_FantasticYouth_-_No_title_No_difficulty_name.png)
 
 ## Running
 
