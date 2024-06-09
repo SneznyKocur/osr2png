@@ -2,7 +2,7 @@ from pathlib import Path
 
 import requests
 from rosu_pp_py import Beatmap as PPBeatmap
-from rosu_pp_py import Calculator, PerformanceAttributes
+from rosu_pp_py import Performance, PerformanceAttributes
 
 import app.utils
 
@@ -19,7 +19,9 @@ OSU_BACKGROUND_URL: str = "https://assets.ppy.sh/beatmaps/{set_id}/covers/fullsi
 KITSU_MD5_URL: str = "https://osu.direct/api/md5/{md5}"
 
 # Internal
-USER_AGENT: str = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+USER_AGENT: str = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+)
 
 
 class Beatmap:
@@ -72,14 +74,14 @@ class Beatmap:
             )
 
         pp_bmap = PPBeatmap(path=str(self.path))
-        pp_calc = Calculator(mods=mods)
+        pp_calc = Performance(mods=mods)
 
         # params
-        pp_calc.set_acc(acc)
+        pp_calc.set_accuracy(acc)
         pp_calc.set_combo(combo)
-        pp_calc.set_n_misses(misses)
+        pp_calc.set_misses(misses)
 
-        return pp_calc.performance(pp_bmap)
+        return pp_calc.calculate(pp_bmap)
 
     """ files """
 
