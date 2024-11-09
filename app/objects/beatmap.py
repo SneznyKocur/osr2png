@@ -3,9 +3,9 @@ from pathlib import Path
 import requests
 from rosu_pp_py import Beatmap as PPBeatmap
 from rosu_pp_py import Performance, PerformanceAttributes
-
+from ossapi.models import Beatmap as osu_beatmap
 import app.utils
-
+from app.utils import api
 #
 CACHE_FOLDER: Path = app.utils.CACHE_FOLDER / "osu"
 SOMETHING_FUCKED_UP: str = "SOMETHING FUCKED UP"
@@ -36,6 +36,7 @@ class Beatmap:
 
         # Set header
         self.http.headers.update({"User-Agent": USER_AGENT})
+
 
     """ trollhd """
 
@@ -103,40 +104,17 @@ class Beatmap:
         return background_file
 
     """ factories """
+    @classmethod
+    def from_md5(cls, md5: str) -> osu_beatmap:
+        Api = api().api
+        beatmap = Api.beatmap(checksum=md5)
+        bmap = cls.from_id(beatmap.id)
+        # HACK: lol
+        bmap.data["Metadata"]["MaxCombo"] = beatmap.max_combo  # type: ignore
+        return bmap
 
     @classmethod
-    def from_md5(cls, md5: str) -> "Beatmap":
-        # TODO: Might want to use osu! /api/ for this one but whatever Kitsu' api is good enough.
-        beatmap: "Beatmap" = cls()
-
-        with beatmap.http.get(KITSU_MD5_URL.format(md5=md5)) as res:
-            print("[API] Getting data from kitsu /api/,", end="")
-            if res.status_code != 200:
-                print(" failed.")
-                print("[API] Failed to get beatmap `{md5}` from kitsu /api/.")
-                print(
-                    "[API] If this is a custom beatmap, please pass the beatmap path with `-b` param."
-                )
-                exit(1)
-
-            data: dict[str, str | int | dict[str, str]] = res.json()
-
-            if beatmap_id := data.get("BeatmapID", 0):
-                print(" success!")
-
-                if bmap := beatmap.from_id(beatmap_id):  # type: ignore
-                    # HACK: lol
-                    bmap.data["Metadata"]["MaxCombo"] = data.get("MaxCombo")  # type: ignore
-
-                    return bmap
-
-        print("[API] This should not happen, report this to me.")
-        exit(1)
-
-    @classmethod
-    def from_id(cls, id: int) -> "Beatmap":
-        beatmap: "Beatmap" = cls()
-
+    def from_id(cls, id: int):
         # Get raw .osu file from osu, if not in cache
         if not (beatmap_file := CACHE_FOLDER / str(id)).exists():
             print("[API] Getting beatmap from osu! /osu/,", end="")
@@ -152,16 +130,14 @@ class Beatmap:
 
                 print(" success!")
                 beatmap_file.write_bytes(res.content)
-
-        # read from file since we have it
-        return beatmap.from_osu_file(beatmap_file)
-
+                cls.path = beatmap_file
+        cls.path =  CACHE_FOLDER / str(id)
+        return cls.from_osu_file(cls.path)
     @classmethod
     def from_osu_file(cls, path: Path) -> "Beatmap":
         beatmap: "Beatmap" = cls(beatmap_path=path)
 
         beatmap.data |= beatmap._parse_beatmap_file_from_path(path)
-
         return beatmap
 
     """ spooky shit """
