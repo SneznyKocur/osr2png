@@ -8,6 +8,10 @@ from PIL import Image
 from app.generation.common.vector import Vector2
 from app.version import Version
 
+# osu api v2
+from ossapi import Ossapi, UserLookupKey
+from oauthlib.oauth2.rfc6749.errors import InvalidClientError
+
 CACHE_FOLDER: Path = Path.cwd() / ".cache"
 AVATAR_FOLDER: Path = CACHE_FOLDER / "avatar"
 API_KEY_FILE: Path = Path.cwd() / "apikey.txt"
@@ -99,30 +103,33 @@ def get_player_avatar(name: str) -> Path:
                 f"[API] Error: Failed to get user avatar because API_KEY_FILE ({API_KEY_FILE}) did not exists."
             )
             print(
-                f"[API] Solution: Please make that file and put your api key into it."
+                f"[API] Solution: Please make that file and put your client id and secret into it."
             )
 
             return CACHE_FOLDER / "default_avatar.png"
+        try:
+            CLIENT_ID, CLIENT_SECRET = API_KEY_FILE.read_text().split("\n")[:2] # split the file by new line
+        except ValueError as e:
+            print(e)
+            print(f"[API] Please put your client id and secret on seperate lines in {API_KEY_FILE}")
+            return CACHE_FOLDER / "default_avatar.png"
 
-        API_KEY = API_KEY_FILE.read_text()
+        try:
+            api = Ossapi(CLIENT_ID, CLIENT_SECRET)
+        except InvalidClientError:
+            print(f"[API] Error: the client id and/or secret provided is invalid")
+            print(f"[API] Solution: https://osu.ppy.sh/home/account/edit#oauth")
+            return CACHE_FOLDER / "defailt_avatar.png"
+        user = api.user(name, key=UserLookupKey.USERNAME)
 
-        with session.get(
-            "https://osu.ppy.sh/api/get_user", params={"k": API_KEY, "u": name}
-        ) as res:
-            if not res.status_code != 200:
-                print("[API] Error: Failed to get user data from osu! /api/.")
-                print("[API] Using default avatar.")
+        # Download
+        print(f"[API] Downloading {name}'s avatar,", end="")
+        with session.get(f"https://a.ppy.sh/{user.id}") as avatar_res:
+            if avatar_res.status_code != 200 and len(avatar_res.content) < 2000:
+                print(" failed.")
+                return CACHE_FOLDER / "default_avatar.png"
 
-            user_id: int = res.json()[0].get("user_id", -1)
-
-            # Download
-            print(f"[API] Downloading {name}'s avatar,", end="")
-            with session.get(f"https://a.ppy.sh/{user_id}") as avatar_res:
-                if avatar_res.status_code != 200 and len(avatar_res.content) < 2000:
-                    print(" failed.")
-                    return CACHE_FOLDER / "default_avatar.png"
-
-                print(" success!")
-                avatar_path.write_bytes(avatar_res.content)
+            print(" success!")
+        avatar_path.write_bytes(avatar_res.content)
 
     return avatar_path
