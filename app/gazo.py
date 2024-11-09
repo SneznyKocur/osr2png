@@ -24,7 +24,7 @@ class Replay2Picture:
         self.beatmap: Beatmap
         self.info: PerformanceAttributes
 
-    # rosu-pp doesn't yet support csr so this will be wastly different from live pp values
+    # rosu-pp doesn't yet support csr so this will be vastly different from live pp values
     def calculate(self) -> None:
         print("[Replay2Picture] Calculating PP,", end="")
         self.info = self.beatmap.calculate_pp(
