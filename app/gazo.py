@@ -87,7 +87,8 @@ class Replay2Picture:
 
         if not beatmap_file and self.replay.beatmap_md5:
             print("[Replay2Picture] No Beatmap file passed, getting from osu!")
-            self.beatmap = Beatmap.from_md5(self.replay.beatmap_md5)
+            bmap = Beatmap()
+            self.beatmap = bmap.from_md5(self.replay.beatmap_md5)
         elif beatmap_file:
             print("[Replay2Picture] Beatmap file passed, using that instead.")
             self.beatmap = Beatmap.from_osu_file(beatmap_file)

@@ -31,11 +31,9 @@ class Beatmap:
         self, data: dict[str, dict[str, str]] = {}, beatmap_path: Path | None = None
     ) -> None:
         self.data: dict[str, dict[str, str]] = data
-        self.http: requests.Session = requests.Session()
+
         self.path = beatmap_path
 
-        # Set header
-        self.http.headers.update({"User-Agent": USER_AGENT})
 
 
     """ trollhd """
@@ -114,12 +112,18 @@ class Beatmap:
         return bmap
 
     @classmethod
-    def from_id(cls, id: int):
+    def from_id(self, id: int):
         # Get raw .osu file from osu, if not in cache
+
+        # HACK: I HAVE NO IDEA WHY THIS CANT BE IN INIT
+        # IT JUST WOULDNT WORK
+        self.http: requests.Session = requests.Session()
+        self.http.headers.update({"User-Agent": USER_AGENT}) # Set header
+
         if not (beatmap_file := CACHE_FOLDER / str(id)).exists():
             print("[API] Getting beatmap from osu! /osu/,", end="")
 
-            with beatmap.http.get(OSU_RAW_URL.format(id=id)) as res:
+            with self.http.get(OSU_RAW_URL.format(id=id)) as res:
                 if res.status_code != 200:
                     print(" failed.")
                     print("[API] Failed to get beatmap file from osu!.")
@@ -130,9 +134,9 @@ class Beatmap:
 
                 print(" success!")
                 beatmap_file.write_bytes(res.content)
-                cls.path = beatmap_file
-        cls.path =  CACHE_FOLDER / str(id)
-        return cls.from_osu_file(cls.path)
+                self.path = beatmap_file
+        self.path =  CACHE_FOLDER / str(id)
+        return self.from_osu_file(self.path)
     @classmethod
     def from_osu_file(cls, path: Path) -> "Beatmap":
         beatmap: "Beatmap" = cls(beatmap_path=path)
