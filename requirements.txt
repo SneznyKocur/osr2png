@@ -2,3 +2,4 @@ rosu-pp-py
 Pillow
 requests
 pyinstaller
+ossapi
