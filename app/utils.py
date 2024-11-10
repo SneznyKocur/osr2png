@@ -6,38 +6,14 @@ import requests
 from PIL import Image
 
 from app.generation.common.vector import Vector2
+from app.objects import api
 from app.version import Version
 
-# osu api v2
-from ossapi import Ossapi, UserLookupKey
-from oauthlib.oauth2.rfc6749.errors import InvalidClientError
-
-
 API_KEY_FILE: Path = Path.cwd() / "apikey.txt"
-class api:
-    def __init__(self):
-        self.api: Ossapi | None = self.get_api()
-
-    @classmethod
-    def get_api(self) -> Ossapi | None:
-        try:
-            CLIENT_ID, CLIENT_SECRET = API_KEY_FILE.read_text().split("\n")[:2] # split the file by new line
-        except ValueError as e:
-            print(f"[API] Please put your client id and secret on seperate lines in {API_KEY_FILE}")
-            return None
-        try:
-            return Ossapi(CLIENT_ID, CLIENT_SECRET)
-        except InvalidClientError:
-            print(f"[API] Error: the client id and/or secret provided is invalid")
-            print(f"[API] Solution: https://osu.ppy.sh/home/account/edit#oauth")
-            return None
-
-
-
-Api_class = api()
-
 CACHE_FOLDER: Path = Path.cwd() / ".cache"
 AVATAR_FOLDER: Path = CACHE_FOLDER / "avatar"
+
+API_CLIENT: api.APIWrapper = api.APIWrapper.from_file(API_KEY_FILE)
 
 
 def ensure_directories() -> int:
@@ -116,26 +92,17 @@ def resize_image_to_resolution_but_keep_ratio(
 
     return img.resize((int(img.width * ratio), int(img.height * ratio)), Image.LANCZOS)
 
+
 def get_player_avatar(name: str) -> Path:
     session: requests.Session = requests.Session()
 
     if not (avatar_path := AVATAR_FOLDER / name).exists():
-        if not API_KEY_FILE.exists():
-            print(
-                f"[API] Error: Failed to get user avatar because API_KEY_FILE ({API_KEY_FILE}) did not exists."
-            )
-            print(
-                f"[API] Solution: Please make that file and put your client id and secret into it."
-            )
-
-        api = Api_class.api
-        if not api:
-            return CACHE_FOLDER / "defailt_avatar.png"
-        user = api.user(name, key=UserLookupKey.USERNAME)
+        if not (user_id := API_CLIENT.get_player_id(name)):
+            return CACHE_FOLDER / "default_avatar.png"
 
         # Download
         print(f"[API] Downloading {name}'s avatar,", end="")
-        with session.get(f"https://a.ppy.sh/{user.id}") as avatar_res:
+        with session.get(f"https://a.ppy.sh/{user_id}") as avatar_res:
             if avatar_res.status_code != 200 and len(avatar_res.content) < 2000:
                 print(" failed.")
                 return CACHE_FOLDER / "default_avatar.png"

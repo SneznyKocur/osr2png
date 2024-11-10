@@ -7,8 +7,7 @@ from rosu_pp_py import PerformanceAttributes
 from app.generation.canvas import Canvas, CanvasSettings, CanvasStyle, Vector2
 from app.objects.beatmap import Beatmap
 from app.objects.replay import ReplayInfo
-from app.utils import api
-from ossapi.models import Beatmap as osu_beatmap
+
 #
 OUTPUT_FOLDER: Path = Path.cwd() / "outputs"
 OUTPUT_FOLDER.mkdir(exist_ok=True)
@@ -32,7 +31,6 @@ class Replay2Picture:
             acc=self.replay.accuracy.value,  # type: ignore
             combo=self.replay.max_combo,  # type: ignore
             misses=self.replay.accuracy.hitmiss,  # type: ignore
-
         )
 
         print(" done!")
@@ -79,7 +77,6 @@ class Replay2Picture:
     def from_replay_file(
         cls, replay_path: Path, beatmap_file: Optional[Path] = None
     ) -> "Replay2Picture":
-        Api = api().api
         print(f"[Replay2Picture] File: `{replay_path.name}`")
 
         self: "Replay2Picture" = cls()
@@ -87,8 +84,7 @@ class Replay2Picture:
 
         if not beatmap_file and self.replay.beatmap_md5:
             print("[Replay2Picture] No Beatmap file passed, getting from osu!")
-            bmap = Beatmap()
-            self.beatmap = bmap.from_md5(self.replay.beatmap_md5)
+            self.beatmap = Beatmap.from_md5(self.replay.beatmap_md5)
         elif beatmap_file:
             print("[Replay2Picture] Beatmap file passed, using that instead.")
             self.beatmap = Beatmap.from_osu_file(beatmap_file)
@@ -96,5 +92,4 @@ class Replay2Picture:
         return self
 
     @classmethod
-    def from_beatmap_file(cls, beatmap_file: Path) -> "Replay2Picture":
-        ...
+    def from_beatmap_file(cls, beatmap_file: Path) -> "Replay2Picture": ...

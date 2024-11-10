@@ -3,9 +3,9 @@ from pathlib import Path
 import requests
 from rosu_pp_py import Beatmap as PPBeatmap
 from rosu_pp_py import Performance, PerformanceAttributes
-from ossapi.models import Beatmap as osu_beatmap
+
 import app.utils
-from app.utils import api
+
 #
 CACHE_FOLDER: Path = app.utils.CACHE_FOLDER / "osu"
 SOMETHING_FUCKED_UP: str = "SOMETHING FUCKED UP"
@@ -31,12 +31,10 @@ class Beatmap:
         self, data: dict[str, dict[str, str]] = {}, beatmap_path: Path | None = None
     ) -> None:
         self.data: dict[str, dict[str, str]] = data
-
+        self.http: requests.Session = requests.Session()
         self.path = beatmap_path
 
-
-
-    """ trollhd """
+        self.http.headers.update({"User-Agent": USER_AGENT})  # Set header
 
     @property
     def id(self) -> int:
@@ -102,28 +100,56 @@ class Beatmap:
         return background_file
 
     """ factories """
+
+    def get_id_from_md5_kitsu(self, md5: str) -> int:
+        with self.http.get(KITSU_MD5_URL.format(md5=md5)) as res:
+            if res.status_code != 200:
+                print("[API] Failed to get beatmap id from kitsu!")
+                return 0
+
+            return res.json().get("BeatmapID", 0)
+
+    def get_id_from_md5_osu(self, md5: str) -> int:
+        return app.utils.API_CLIENT.get_beatmap_id_from_md5(md5)
+
     @classmethod
-    def from_md5(cls, md5: str) -> osu_beatmap:
-        Api = api().api
-        beatmap = Api.beatmap(checksum=md5)
-        bmap = cls.from_id(beatmap.id)
-        # HACK: lol
-        bmap.data["Metadata"]["MaxCombo"] = beatmap.max_combo  # type: ignore
+    def from_md5(cls, md5: str):
+        beatmap: "Beatmap" = cls()
+
+        current_id: int = 0
+
+        for api_method in [
+            beatmap.get_id_from_md5_osu,
+            beatmap.get_id_from_md5_kitsu,
+        ]:
+            print(
+                f"[API] Trying to get beatmap id from {api_method.__name__}, ", end=""
+            )
+            try:
+                if (current_id := api_method(md5)) != 0:
+                    print("success!")
+                    break
+            except Exception as err:
+                print(f"failed. Reason: {err}")
+                continue
+
+        if current_id == 0:
+            print("[API] Failed to get beatmap id from all sources!")
+            return None
+
+        bmap = cls.from_id(current_id)
+
         return bmap
 
     @classmethod
-    def from_id(self, id: int):
+    def from_id(cls, id: int):
+        beatmap: "Beatmap" = cls()
+
         # Get raw .osu file from osu, if not in cache
-
-        # HACK: I HAVE NO IDEA WHY THIS CANT BE IN INIT
-        # IT JUST WOULDNT WORK
-        self.http: requests.Session = requests.Session()
-        self.http.headers.update({"User-Agent": USER_AGENT}) # Set header
-
         if not (beatmap_file := CACHE_FOLDER / str(id)).exists():
             print("[API] Getting beatmap from osu! /osu/,", end="")
 
-            with self.http.get(OSU_RAW_URL.format(id=id)) as res:
+            with beatmap.http.get(OSU_RAW_URL.format(id=id)) as res:
                 if res.status_code != 200:
                     print(" failed.")
                     print("[API] Failed to get beatmap file from osu!.")
@@ -134,9 +160,10 @@ class Beatmap:
 
                 print(" success!")
                 beatmap_file.write_bytes(res.content)
-                self.path = beatmap_file
-        self.path =  CACHE_FOLDER / str(id)
-        return self.from_osu_file(self.path)
+                beatmap.path = beatmap_file
+
+        return beatmap.from_osu_file(beatmap_file)
+
     @classmethod
     def from_osu_file(cls, path: Path) -> "Beatmap":
         beatmap: "Beatmap" = cls(beatmap_path=path)
