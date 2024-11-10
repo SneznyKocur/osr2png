@@ -23,6 +23,7 @@ def main() -> int:
         f"--name=osr2png",
         "--upx-exclude=vcruntime140.dll",
         "--noconfirm",
+        "--recursive-copy-metadata=ossapi",
         "--onefile",
         "main.py",
     ]
